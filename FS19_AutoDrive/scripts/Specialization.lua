@@ -22,7 +22,8 @@ function AutoDrive.registerEventListeners(vehicleType)
             "onStopAutoDrive",
             "onPostAttachImplement",
             "onPreDetachImplement",
-            "onEnterVehicle"
+            "onEnterVehicle",
+            "onLeaveVehicle"
         }
     ) do
         SpecializationUtil.registerEventListener(vehicleType, n, AutoDrive)
@@ -121,11 +122,19 @@ function AutoDrive:onLoad(savegame)
 
     self.ad.onRouteToPark = false
     self.ad.isStoppingWithError = false
+
+    self.ad.selectedNodeId = nil
+    self.ad.nodeToMoveId = nil
+    self.ad.hoveredNodeId = nil
+    self.ad.newcreated = nil
 end
 
 function AutoDrive:onPostLoad(savegame)
     -- This will run before initial MP sync
     --print("Running post load for vehicle: " .. self:getName())
+    if self.ad == nil then
+        return
+    end
 
     for groupName, _ in pairs(ADGraphManager:getGroups()) do
         self.ad.groups[groupName] = false
@@ -154,8 +163,6 @@ function AutoDrive:onPostLoad(savegame)
         end
 
         self.ad.noMovementTimer = AutoDriveTON:new()
-        self.ad.noTurningTimer = AutoDriveTON:new()
-        self.ad.turningTimer = AutoDriveTON:new()
         self.ad.driveForwardTimer = AutoDriveTON:new()
     end
 
@@ -189,6 +196,9 @@ function AutoDrive:onPostLoad(savegame)
 end
 
 function AutoDrive:onWriteStream(streamId, connection)
+    if self.ad == nil then
+        return
+    end
     for settingName, setting in pairs(AutoDrive.settings) do
         if setting ~= nil and setting.isVehicleSpecific then
             streamWriteUInt16(streamId, AutoDrive.getSettingState(settingName, self))
@@ -198,6 +208,9 @@ function AutoDrive:onWriteStream(streamId, connection)
 end
 
 function AutoDrive:onReadStream(streamId, connection)
+    if self.ad == nil then
+        return
+    end
     for settingName, setting in pairs(AutoDrive.settings) do
         if setting ~= nil and setting.isVehicleSpecific then
             self.ad.settings[settingName].current = streamReadUInt16(streamId)
@@ -230,6 +243,9 @@ function AutoDrive:onUpdateTick(dt, isActiveForInput, isActiveForInputIgnoreSele
 end
 
 function AutoDrive:onReadUpdateStream(streamId, timestamp, connection)
+    if self.ad == nil then
+        return
+    end
     if connection:getIsServer() then
         if streamReadBool(streamId) then
             self.ad.stateModule:readUpdateStream(streamId)
@@ -238,6 +254,9 @@ function AutoDrive:onReadUpdateStream(streamId, timestamp, connection)
 end
 
 function AutoDrive:onWriteUpdateStream(streamId, connection, dirtyMask)
+    if self.ad == nil then
+        return
+    end
     if not connection:getIsServer() then
         if streamWriteBool(streamId, bitAND(dirtyMask, self.ad.dirtyFlag) ~= 0) then
             self.ad.stateModule:writeUpdateStream(streamId)
@@ -254,9 +273,7 @@ function AutoDrive:onUpdate(dt)
         end
     end
 
-    if self.getIsEntered ~= nil and self:getIsEntered() then
-        self.ad.stateModule:update(dt)
-    end
+    self.ad.stateModule:update(dt)
 
     ADSensor:handleSensors(self, dt)
 
@@ -265,12 +282,14 @@ function AutoDrive:onUpdate(dt)
     end
 
     --For 'legacy' purposes, this value should be kept since other mods already test for this:
-    self.ad.isActive = self.ad.stateModule:isActive()
     self.ad.mapMarkerSelected = self.ad.stateModule:getFirstMarkerId()
     self.ad.mapMarkerSelected_Unload = self.ad.stateModule:getSecondMarkerId()
 end
 
 function AutoDrive:saveToXMLFile(xmlFile, key)
+    if self.ad == nil then
+        return
+    end
     self.ad.stateModule:saveToXMLFile(xmlFile, key)
 
     for settingName, setting in pairs(AutoDrive.settings) do
@@ -320,7 +339,7 @@ function AutoDrive:onDraw()
         end
     end
 
-    if (self.ad.stateModule:isEditorModeEnabled() or self.ad.stateModule:isEditorShowEnabled()) then
+    if (AutoDrive.isEditorModeEnabled() or AutoDrive.isEditorShowEnabled()) then
         self:onDrawEditorMode()
     end
 
@@ -452,11 +471,18 @@ function AutoDrive:onEnterVehicle()
     AutoDrive.Hud.lastUIScale = 0
 end
 
+function AutoDrive:onLeaveVehicle()
+    if self.ad ~= nil and self.ad.stateModule ~= nil then
+        self.ad.stateModule:disableCreationMode()
+    end
+end
+
 function AutoDrive:onDelete()
     AutoDriveHud:deleteMapHotspot(self)
 end
 
 function AutoDrive:onDrawEditorMode()
+    local isActive = self.ad.stateModule:isActive()
     local DrawingManager = ADDrawingManager
 
     local startNode = self.ad.frontNode
@@ -478,7 +504,8 @@ function AutoDrive:onDrawEditorMode()
         end
     end
 
-    if ADGraphManager:getWayPointById(1) ~= nil and not self.ad.stateModule:isEditorShowEnabled() then
+    if ADGraphManager:getWayPointById(1) ~= nil and not AutoDrive.isEditorShowEnabled() then
+
         local g = 0
         --Draw line to selected neighbor point
         local neighbour = self.ad.stateModule:getSelectedNeighbourPoint()
@@ -501,30 +528,49 @@ function AutoDrive:onDrawEditorMode()
         local x = point.x
         local y = point.y
         local z = point.z
-        if self.ad.stateModule:isInExtendedEditorMode() then
+        if AutoDrive.isInExtendedEditorMode() then
             arrowPosition = DrawingManager.arrows.position.middle
-            if AutoDrive.mouseIsAtPos(point, 0.01) then
-                DrawingManager:addSphereTask(x, y, z, 3, 0, 0, 1, 0.3)
-            else
-                if point.id == self.ad.selectedNodeId then
-                    DrawingManager:addSphereTask(x, y, z, 3, 0, 1, 0, 0.3)
-                else
-                    DrawingManager:addSphereTask(x, y, z, 3, 1, 0, 0, 0.3)
-                end
-            end
-
-            -- If the lines are drawn above the vehicle, we have to draw a line to the reference point on the ground and a second cube there for moving the node position
-            if AutoDrive.getSettingState("lineHeight") > 1 then
-                local gy = y - AutoDrive.drawHeight - AutoDrive.getSetting("lineHeight")
-                DrawingManager:addLineTask(x, y, z, x, gy, z, 1, 1, 1)
-
-                if AutoDrive.mouseIsAtPos(point, 0.01) or AutoDrive.mouseIsAtPos({x = x, y = gy, z = z}, 0.01) then
-                    DrawingManager:addSphereTask(x, gy, z, 3, 0, 0, 1, 0.15)
+            if AutoDrive.enableSphrere == true then
+                if AutoDrive.mouseIsAtPos(point, 0.01) then
+                    DrawingManager:addSphereTask(x, y, z, 3, 0, 0, 1, 0.3)
                 else
                     if point.id == self.ad.selectedNodeId then
-                        DrawingManager:addSphereTask(x, gy, z, 3, 0, 1, 0, 0.15)
+                        DrawingManager:addSphereTask(x, y, z, 3, 0, 1, 0, 0.3)
                     else
-                        DrawingManager:addSphereTask(x, gy, z, 3, 1, 0, 0, 0.15)
+                        DrawingManager:addSphereTask(x, y, z, 3, 1, 0, 0, 0.3)
+                    end
+                end
+
+                -- If the lines are drawn above the vehicle, we have to draw a line to the reference point on the ground and a second cube there for moving the node position
+                if AutoDrive.getSettingState("lineHeight") > 1 then
+                    local gy = y - AutoDrive.drawHeight - AutoDrive.getSetting("lineHeight")
+                    DrawingManager:addLineTask(x, y, z, x, gy, z, 1, 1, 1)
+
+                    if AutoDrive.mouseIsAtPos(point, 0.01) or AutoDrive.mouseIsAtPos({x = x, y = gy, z = z}, 0.01) then
+                        DrawingManager:addSphereTask(x, gy, z, 3, 0, 0, 1, 0.15)
+                    else
+                        if point.id == self.ad.selectedNodeId then
+                            DrawingManager:addSphereTask(x, gy, z, 3, 0, 1, 0, 0.15)
+                        else
+                            DrawingManager:addSphereTask(x, gy, z, 3, 1, 0, 0, 0.15)
+                        end
+                    end
+                end
+
+                -- draw previous and next points in different colors - note: sequence is important
+                if point.out ~= nil and not isActive then
+                    for _, neighbor in pairs(point.out) do
+                        local nWp = ADGraphManager:getWayPointById(neighbor)
+                        if nWp ~= nil then
+                            if AutoDrive.mouseIsAtPos(nWp, 0.01) then
+                                -- draw previous point in GOLDHOFER_PINK1
+                                DrawingManager:addSphereTask(point.x, point.y, point.z, 3.4, 1, 0.2195, 0.6524, 0.5)
+                            end
+                            if AutoDrive.mouseIsAtPos(point, 0.01) then
+                                -- draw next point
+                                DrawingManager:addSphereTask(nWp.x, nWp.y, nWp.z, 3.2, 1, 0.7, 0, 0.5)
+                            end
+                        end
                     end
                 end
             end
@@ -538,14 +584,16 @@ function AutoDrive:onDrawEditorMode()
                     --check if outgoing connection is a dual way connection
                     local nWp = ADGraphManager:getWayPointById(neighbor)
                     if point.incoming == nil or table.contains(point.incoming, neighbor) then
-                        --draw simple line
+                        --draw dual way line
                         DrawingManager:addLineTask(x, y, z, nWp.x, nWp.y, nWp.z, 0, 0, 1)
                     else
                         --draw line with direction markers (arrow)
-                        if (nWp.incoming == nil or table.contains(nWp.incoming, point.id)) or not AutoDrive.experimentalFeatures.reverseDrivingAllowed then
+                        if (nWp.incoming == nil or table.contains(nWp.incoming, point.id)) then
+                            -- one way line
                             DrawingManager:addLineTask(x, y, z, nWp.x, nWp.y, nWp.z, 0, 1, 0)
                             DrawingManager:addArrowTask(x, y, z, nWp.x, nWp.y, nWp.z, arrowPosition, 0, 1, 0)
                         else
+                            -- reverse way line
                             DrawingManager:addLineTask(x, y, z, nWp.x, nWp.y, nWp.z, 0.0, 0.569, 0.835)
                             DrawingManager:addArrowTask(x, y, z, nWp.x, nWp.y, nWp.z, arrowPosition, 0.0, 0.569, 0.835)
                         end
@@ -621,29 +669,38 @@ function AutoDrive:stopAutoDrive()
                 local callBackFunction = self.ad.callBackFunction
                 local callBackObject = self.ad.callBackObject
                 local callBackArg = self.ad.callBackArg
-                self.ad.callBackFunction = nil
-                self.ad.callBackObject = nil
-                self.ad.callBackArg = nil
+                if distanceToStart < 30 then        -- pass control to external mod only when near to field point
+                    if callBackObject ~= nil then
+                        if callBackArg ~= nil then
+                            AutoDrive.debugPrint(self, AutoDrive.DC_EXTERNALINTERFACEINFO, "AutoDrive:stopAutoDrive pass control to external mod callBackObject %s callBackArg %s", tostring(callBackObject), tostring(callBackArg))
+                            self.ad.callBackFunction = nil
+                            self.ad.callBackObject = nil
+                            self.ad.callBackArg = nil
+                            callBackFunction(callBackObject, callBackArg)
+                        else
+                            AutoDrive.debugPrint(self, AutoDrive.DC_EXTERNALINTERFACEINFO, "AutoDrive:stopAutoDrive pass control to external mod callBackObject %s", tostring(callBackObject))
+                            self.ad.callBackFunction = nil
+                            self.ad.callBackObject = nil
+                            self.ad.callBackArg = nil
+                            callBackFunction(callBackObject)
+                        end
+                    else
+                        if callBackArg ~= nil then
+                            AutoDrive.debugPrint(self, AutoDrive.DC_EXTERNALINTERFACEINFO, "AutoDrive:stopAutoDrive pass control to external mod callBackArg %s", tostring(callBackArg))
+                            self.ad.callBackFunction = nil
+                            self.ad.callBackObject = nil
+                            self.ad.callBackArg = nil
+                            callBackFunction(callBackArg)
+                        else
+                            AutoDrive.debugPrint(self, AutoDrive.DC_EXTERNALINTERFACEINFO, "AutoDrive:stopAutoDrive pass control to external mod, no callBackArg no callBackArg")
+                            self.ad.callBackFunction = nil
+                            self.ad.callBackObject = nil
+                            self.ad.callBackArg = nil
+                            callBackFunction()
+                        end
+                    end
+                end
 
-				if distanceToStart < 30 then 			-- pass control to external mod only when near to field point
-					if callBackObject ~= nil then
-						if callBackArg ~= nil then
-							callBackFunction(callBackObject, callBackArg)
-						else
-							callBackFunction(callBackObject)
-						end
-					else
-						if callBackArg ~= nil then
-							callBackFunction(callBackArg)
-						else
-							callBackFunction()
-						end
-					end
-				end
-
-                self.ad.callBackFunction = nil
-                self.ad.callBackObject = nil
-                self.ad.callBackArg = nil
             else
                 AIVehicleUtil.driveInDirection(self, 16, 30, 0, 0.2, 20, false, self.ad.drivingForward, 0, 0, 0, 1)
                 self:setCruiseControlState(Drivable.CRUISECONTROL_STATE_OFF)
@@ -682,14 +739,16 @@ function AutoDrive:stopAutoDrive()
             local isPassingToCP = hasCallbacks or (not self.ad.isStoppingWithError and self.ad.stateModule:getStartCP_AIVE() and self.ad.stateModule:getUseCP_AIVE())
             AutoDriveStartStopEvent:sendStopEvent(self, isPassingToCP, isStartingAIVE)
 
-            if not hasCallbacks and not self.ad.isStoppingWithError then
+            if not hasCallbacks and not self.ad.isStoppingWithError and distanceToStart < 30 then
                 if self.ad.stateModule:getStartCP_AIVE() then
                     self.ad.stateModule:setStartCP_AIVE(false)
                     if  g_courseplay ~= nil and self.ad.stateModule:getUseCP_AIVE() then
+                        AutoDrive.debugPrint(self, AutoDrive.DC_EXTERNALINTERFACEINFO, "AutoDrive:stopAutoDrive pass control to CP with start")
                         g_courseplay.courseplay:start(self)
                     else
                         if self.acParameters ~= nil then
                             self.acParameters.enabled = true
+                            AutoDrive.debugPrint(self, AutoDrive.DC_EXTERNALINTERFACEINFO, "AutoDrive:stopAutoDrive pass control to AIVE with startAIVehicle")
                             self:startAIVehicle(nil, false, self.spec_aiVehicle.startedFarmId)
                         end
                     end
@@ -708,6 +767,8 @@ function AutoDrive:onStartAutoDrive()
     self.spec_aiVehicle.isActive = true
     self.steeringEnabled = false
 
+    self.ad.isActive = true
+
     if self.currentHelper == nil then
         self.currentHelper = g_helperManager:getRandomHelper()
         if self.currentHelper ~= nil then
@@ -723,6 +784,15 @@ function AutoDrive:onStartAutoDrive()
     end
 
     AutoDriveHud:createMapHotspot(self)
+
+    if AutoDrive.getSetting("enableParkAtJobFinished", self) and ((self.ad.stateModule:getMode() == AutoDrive.MODE_PICKUPANDDELIVER) or (self.ad.stateModule:getMode() == AutoDrive.MODE_DELIVERTO)) then
+        local actualParkDestination = AutoDrive.getActualParkDestination(self)
+        if actualParkDestination >= 1 then
+            self.ad.stateModule:setParkDestinationAtJobFinished(actualParkDestination)
+        else
+            AutoDriveMessageEvent.sendMessage(self, ADMessagesManager.messageTypes.ERROR, "$l10n_AD_parkVehicle_noPosSet;", 5000)
+        end
+    end
 end
 
 function AutoDrive:onStopAutoDrive(hasCallbacks, isStartingAIVE)
@@ -730,6 +800,8 @@ function AutoDrive:onStopAutoDrive(hasCallbacks, isStartingAIVE)
         if self.raiseAIEvent ~= nil and not isStartingAIVE then
             self:raiseAIEvent("onAIEnd", "onAIImplementEnd")
         end
+
+        self.ad.isActive = false
 
         self.spec_aiVehicle.isActive = false
         self.forceIsActive = false
