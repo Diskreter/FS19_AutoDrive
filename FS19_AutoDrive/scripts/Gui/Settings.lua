@@ -169,7 +169,6 @@ function ADSettings:applySettings()
         end
 
         if userSpecificHasChanges then
-            AutoDrive.setEditorMode(AutoDrive.EDITOR_OFF)
             ADUserDataManager:sendToServer()
         end
 

@@ -12,10 +12,7 @@ ADRoutesManager.cfnInterval = 1000
 ADRoutesManager.cfnFile = ""
 
 function ADRoutesManager:load()
-	if g_currentMission:getIsClient() and not g_currentMission:getIsServer() and not g_currentMission.isMasterUser then
-        return
-    end
-   -- defining and creating needed folders
+    -- defining and creating needed folders
     self.rootFolder = getUserProfileAppPath() .. "autoDrive/"
     createFolder(self.rootFolder)
     self.managerFolder = self.rootFolder .. "routesManager/"
@@ -29,9 +26,6 @@ function ADRoutesManager:load()
 end
 
 function ADRoutesManager:loadRoutesFromXML()
-	if g_currentMission:getIsClient() and not g_currentMission:getIsServer() and not g_currentMission.isMasterUser then
-        return
-    end
     self:delete()
     self.routes = {}
     self.xmlFile = self.managerFolder .. "routes.xml"
@@ -60,9 +54,6 @@ function ADRoutesManager:loadRoutesFromXML()
 end
 
 function ADRoutesManager:update(dt)
-	if g_currentMission:getIsClient() and not g_currentMission:getIsServer() and not g_currentMission.isMasterUser then
-        return
-    end
     self.cfnTimer = self.cfnTimer + dt
     if self.cfnTimer >= self.cfnInterval then
         if fileExists(self.cfnFile) then
@@ -77,9 +68,6 @@ function ADRoutesManager:update(dt)
 end
 
 function ADRoutesManager:import(name)
-	if g_currentMission:getIsClient() and not g_currentMission:getIsServer() and not g_currentMission.isMasterUser then
-        return
-    end
     local route =
         table.f_find(
         self.routes,
@@ -98,9 +86,6 @@ function ADRoutesManager:import(name)
 end
 
 function ADRoutesManager:export(name)
-	if g_currentMission:getIsClient() and not g_currentMission:getIsServer() and not g_currentMission.isMasterUser then
-        return
-    end
     local fileName = self:getFileName()
     if name == nil or name == "" then
         name = fileName
@@ -139,9 +124,6 @@ function ADRoutesManager:export(name)
 end
 
 function ADRoutesManager:remove(name)
-	if g_currentMission:getIsClient() and not g_currentMission:getIsServer() and not g_currentMission.isMasterUser then
-        return
-    end
     local mapName = AutoDrive.loadedMap
     local routeIndex =
         table.f_indexOf(
@@ -168,9 +150,6 @@ function ADRoutesManager:getFileName()
 end
 
 function ADRoutesManager:saveRoutes()
-	if g_currentMission:getIsClient() and not g_currentMission:getIsServer() and not g_currentMission.isMasterUser then
-        return
-    end
     -- updating routes.xml
     removeXMLProperty(self.xml, "autoDriveRoutesManager.routes")
     for i, route in pairs(self.routes) do

@@ -631,7 +631,7 @@ function ADDrivePathModule:checkActiveAttributesSet(dt)
         end
         self.vehicle.spec_aiVehicle.aiTrafficCollisionTranslation[2] = -1000
 
-        if self.vehicle.setBeaconLightsVisibility ~= nil and AutoDrive.getSetting("useBeaconLights", self.vehicle) then
+        if self.vehicle.setBeaconLightsVisibility ~= nil and AutoDrive.getSetting("useBeaconLights") then
             local x, y, z = getWorldTranslation(self.vehicle.components[1].node)
             if not AutoDrive.checkIsOnField(x, y, z) and self.vehicle.spec_motorized.isMotorStarted then
                 self.vehicle:setBeaconLightsVisibility(true)
@@ -689,7 +689,7 @@ end
 function ADDrivePathModule:checkForReverseSection()
     local reverseStart = false
     local reverseEnd = false
-    if self.wayPoints ~= nil and #self.wayPoints > self:getCurrentWayPointIndex() + 1 and self:getCurrentWayPointIndex() > 1 then
+    if AutoDrive.experimentalFeatures.reverseDrivingAllowed and self.wayPoints ~= nil and #self.wayPoints > self:getCurrentWayPointIndex() + 1 and self:getCurrentWayPointIndex() > 1 then
         local wp_ahead = self.wayPoints[self:getCurrentWayPointIndex() + 1]
         local wp_current = self.wayPoints[self:getCurrentWayPointIndex() - 0]
         local wp_ref = self.wayPoints[self:getCurrentWayPointIndex() - 1]
