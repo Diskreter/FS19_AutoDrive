@@ -106,19 +106,12 @@ end
 
 function AutoDrive.hasToRefuel(vehicle)
     local spec = vehicle.spec_motorized
-    local ret = false
 
-    if spec.consumersByFillTypeName ~= nil then
-        -- at least one fuel type is sufficient to continue
-        if spec.consumersByFillTypeName.diesel ~= nil and spec.consumersByFillTypeName.diesel.fillUnitIndex ~= nil then
-            ret = ret or vehicle:getFillUnitFillLevelPercentage(spec.consumersByFillTypeName.diesel.fillUnitIndex) > AutoDrive.REFUEL_LEVEL
-        end
-        if spec.consumersByFillTypeName.electricCharge ~= nil and spec.consumersByFillTypeName.electricCharge.fillUnitIndex ~= nil then
-            ret = ret or vehicle:getFillUnitFillLevelPercentage(spec.consumersByFillTypeName.electricCharge.fillUnitIndex) > AutoDrive.REFUEL_LEVEL
-        end
+    if spec.consumersByFillTypeName ~= nil and spec.consumersByFillTypeName.diesel ~= nil and spec.consumersByFillTypeName.diesel.fillUnitIndex ~= nil then
+        return vehicle:getFillUnitFillLevelPercentage(spec.consumersByFillTypeName.diesel.fillUnitIndex) <= AutoDrive.REFUEL_LEVEL
     end
 
-    return not ret
+    return false
 end
 
 function AutoDrive.combineIsTurning(combine)
@@ -199,99 +192,4 @@ function AutoDrive.isVehicleInBunkerSiloArea(vehicle)
     end
 
     return false
-end
-
-function AutoDrive.isEditorModeEnabled()
-    return (AutoDrive.getSetting("EditorMode") == AutoDrive.EDITOR_ON) or (AutoDrive.getSetting("EditorMode") == AutoDrive.EDITOR_EXTENDED)
-end
-
-function AutoDrive.isEditorShowEnabled()
-    return (AutoDrive.getSetting("EditorMode") == AutoDrive.EDITOR_SHOW)
-end
-
-function AutoDrive.isInExtendedEditorMode()
-    return (AutoDrive.getSetting("EditorMode") == AutoDrive.EDITOR_EXTENDED)
-end
-
-function AutoDrive.getEditorMode()
-    return (AutoDrive.getSetting("EditorMode"))
-end
-
-function AutoDrive.setEditorMode(editorMode)
-    AutoDrive.setSettingState("EditorMode", editorMode)
-end
-
-function AutoDrive.cycleEditMode()
-    local vehicle = g_currentMission.controlledVehicle
-    if g_client ~= nil then
-
-        if vehicle ~= nil and vehicle.ad ~= nil then
-            vehicle.ad.selectedNodeId = nil
-            vehicle.ad.nodeToMoveId = nil
-            vehicle.ad.hoveredNodeId = nil
-			vehicle.ad.newcreated = nil
-        end
-        if (AutoDrive.getSetting("EditorMode") == AutoDrive.EDITOR_OFF) then
-            AutoDrive.setEditorMode(AutoDrive.EDITOR_EXTENDED)
-        else
-            AutoDrive.setEditorMode(AutoDrive.EDITOR_OFF)
-            if vehicle ~= nil and vehicle.ad ~= nil and vehicle.ad.stateModule ~= nil then
-                vehicle.ad.stateModule:disableCreationMode()
-            end
-        end
-    end
-end
-
-function AutoDrive.cycleEditorShowMode()
-    local vehicle = g_currentMission.controlledVehicle
-
-    if (AutoDrive.getSetting("EditorMode") == AutoDrive.EDITOR_OFF) then
-        AutoDrive.setEditorMode(AutoDrive.EDITOR_SHOW)
-    else
-        AutoDrive.setEditorMode(AutoDrive.EDITOR_OFF)
-		if vehicle ~= nil and vehicle.ad ~= nil and vehicle.ad.stateModule ~= nil then
-            vehicle.ad.stateModule:disableCreationMode()
-        end
-    end
-end
-
-function AutoDrive.getActualParkDestination(vehicle)
-    local actualParkDestination = -1
-    local SelectedWorkTool = nil
-
-    if vehicle == nil then
-        return actualParkDestination
-    end
-
-    if vehicle ~= nil and vehicle.getAttachedImplements and #vehicle:getAttachedImplements() > 0 and g_dedicatedServerInfo == nil then
-        local allImp = {}
-        -- Credits to Tardis from FS17
-        local function addAllAttached(obj)
-            for _, imp in pairs(obj:getAttachedImplements()) do
-                addAllAttached(imp.object)
-                table.insert(allImp, imp)
-            end
-        end
-            
-        addAllAttached(vehicle)
-
-        if allImp ~= nil then
-            for i = 1, #allImp do
-                local imp = allImp[i]
-                if imp ~= nil and imp.object ~= nil and imp.object:getIsSelected() then
-                    SelectedWorkTool = imp.object
-                    break
-                end
-            end
-        end
-    end
-    if SelectedWorkTool ~= nil and SelectedWorkTool ~= vehicle and SelectedWorkTool.advd ~= nil and SelectedWorkTool.advd.getWorkToolParkDestination ~= nil then
-        actualParkDestination = SelectedWorkTool.advd:getWorkToolParkDestination()
-    else
-        if vehicle ~= nil and vehicle.ad ~= nil and vehicle.ad.stateModule ~= nil and vehicle.ad.stateModule.getParkDestination ~= nil then
-            -- g_logManager:info("[AD] AutoDrive.getActualParkDestination vehicle %s vehicle:getIsSelected() %s", tostring(vehicle), tostring(vehicle:getIsSelected()))
-            actualParkDestination = vehicle.ad.stateModule:getParkDestination()
-        end
-    end
-    return actualParkDestination
 end

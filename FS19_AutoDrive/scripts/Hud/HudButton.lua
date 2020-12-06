@@ -68,7 +68,7 @@ function ADHudButton:getNewState(vehicle)
         else
             newState = 1
         end
-        self.isVisible = AutoDrive.isEditorModeEnabled()
+        self.isVisible = vehicle.ad.stateModule:isEditorModeEnabled()
     end
 
     if self.primaryAction == "input_start_stop" then
@@ -80,7 +80,7 @@ function ADHudButton:getNewState(vehicle)
     end
 
     if self.primaryAction == "input_debug" then
-        if AutoDrive.isEditorModeEnabled() then
+        if vehicle.ad.stateModule:isEditorModeEnabled() then
             newState = 2
         else
             newState = 1
@@ -88,7 +88,7 @@ function ADHudButton:getNewState(vehicle)
     end
 
     if self.primaryAction == "input_showNeighbor" then
-        self.isVisible = AutoDrive.isEditorModeEnabled()
+        self.isVisible = vehicle.ad.stateModule:isEditorModeEnabled()
 
         if vehicle.ad.showSelectedDebugPoint == true then
             newState = 2
@@ -98,31 +98,31 @@ function ADHudButton:getNewState(vehicle)
     end
 
     if self.primaryAction == "input_toggleConnection" then
-        self.isVisible = AutoDrive.isEditorModeEnabled()
+        self.isVisible = vehicle.ad.stateModule:isEditorModeEnabled()
     end
 
     if self.primaryAction == "input_nextNeighbor" then
-        self.isVisible = AutoDrive.isEditorModeEnabled()
+        self.isVisible = vehicle.ad.stateModule:isEditorModeEnabled()
     end
 
     if self.primaryAction == "input_createMapMarker" then
-        self.isVisible = AutoDrive.isEditorModeEnabled()
+        self.isVisible = vehicle.ad.stateModule:isEditorModeEnabled()
     end
 
     if self.primaryAction == "input_routesManager" then
-        self.isVisible = AutoDrive.isEditorModeEnabled()
+        self.isVisible = vehicle.ad.stateModule:isEditorModeEnabled()
     end
 
     if self.primaryAction == "input_removeWaypoint" then
-        self.isVisible = AutoDrive.isEditorModeEnabled()
+        self.isVisible = vehicle.ad.stateModule:isEditorModeEnabled()
     end
 
     if self.primaryAction == "input_editMapMarker" then
-        self.isVisible = AutoDrive.isEditorModeEnabled()
+        self.isVisible = vehicle.ad.stateModule:isEditorModeEnabled()
     end
 
     if self.primaryAction == "input_removeMapMarker" then
-        self.isVisible = AutoDrive.isEditorModeEnabled()
+        self.isVisible = vehicle.ad.stateModule:isEditorModeEnabled()
     end
 
     if self.primaryAction == "input_incLoopCounter" then
@@ -135,7 +135,39 @@ function ADHudButton:getNewState(vehicle)
     end
 
     if self.primaryAction == "input_parkVehicle" then
-        local actualParkDestination = AutoDrive.getActualParkDestination(vehicle)
+        local actualParkDestination = -1
+        local SelectedWorkTool = nil
+
+        if vehicle ~= nil and vehicle.getAttachedImplements and #vehicle:getAttachedImplements() > 0 and g_dedicatedServerInfo == nil then
+            local allImp = {}
+            -- Credits to Tardis from FS17
+            local function addAllAttached(obj)
+                for _, imp in pairs(obj:getAttachedImplements()) do
+                    addAllAttached(imp.object)
+                    table.insert(allImp, imp)
+                end
+            end
+                
+            addAllAttached(vehicle)
+
+            if allImp ~= nil then
+                for i = 1, #allImp do
+                    local imp = allImp[i]
+                    if imp ~= nil and imp.object ~= nil and imp.object:getIsSelected() then
+                        SelectedWorkTool = imp.object
+                        break
+                    end
+                end
+            end
+        end
+        if SelectedWorkTool ~= nil and SelectedWorkTool ~= vehicle and SelectedWorkTool.advd ~= nil and SelectedWorkTool.advd.getWorkToolParkDestination ~= nil then
+            actualParkDestination = SelectedWorkTool.advd:getWorkToolParkDestination()
+        else
+            if vehicle ~= nil and vehicle.ad ~= nil and vehicle.ad.stateModule ~= nil and vehicle.ad.stateModule.getParkDestination ~= nil then
+                -- g_logManager:info("[AD] ADInputManager:input_parkVehicle vehicle %s vehicle:getIsSelected() %s", tostring(vehicle), tostring(vehicle:getIsSelected()))
+                actualParkDestination = vehicle.ad.stateModule:getParkDestination()
+            end
+        end
 
         if actualParkDestination >= 1 then
             newState = 1
@@ -160,7 +192,7 @@ function ADHudButton:getNewState(vehicle)
                 end
             end
         end
-        self.isVisible = (not AutoDrive.isEditorModeEnabled()) or (AutoDrive.getSetting("wideHUD") and AutoDrive.getSetting("addSettingsToHUD"))
+        self.isVisible = (not vehicle.ad.stateModule:isEditorModeEnabled()) or (AutoDrive.getSetting("wideHUD") and AutoDrive.getSetting("addSettingsToHUD"))
     end
 
     return newState
@@ -173,18 +205,43 @@ function ADHudButton:act(vehicle, posX, posY, isDown, isUp, button)
         vehicle.ad.sToolTipInfo = nil
         vehicle.ad.toolTipIsSetting = false
 
-        if self.primaryAction == "input_debug" then
-            if button == 1 and isUp then
-                AutoDrive.cycleEditMode()
-                return true
-            elseif (button == 3 or button == 2) and isUp then
-                AutoDrive.cycleEditorShowMode()
-                return true
-            end
-        end
         if self.primaryAction == "input_parkVehicle" then
-            local actualParkDestination = AutoDrive.getActualParkDestination(vehicle)
-            if actualParkDestination >= 1 and ADGraphManager:getMapMarkerById(actualParkDestination) ~= nil then
+
+            local actualParkDestination = -1
+            local SelectedWorkTool = nil
+
+            if vehicle ~= nil and vehicle.getAttachedImplements and #vehicle:getAttachedImplements() > 0 and g_dedicatedServerInfo == nil then
+                local allImp = {}
+                -- Credits to Tardis from FS17
+                local function addAllAttached(obj)
+                    for _, imp in pairs(obj:getAttachedImplements()) do
+                        addAllAttached(imp.object)
+                        table.insert(allImp, imp)
+                    end
+                end
+                    
+                addAllAttached(vehicle)
+
+                if allImp ~= nil then
+                    for i = 1, #allImp do
+                        local imp = allImp[i]
+                        if imp ~= nil and imp.object ~= nil and imp.object:getIsSelected() then
+                            SelectedWorkTool = imp.object
+                            break
+                        end
+                    end
+                end
+            end
+            if SelectedWorkTool ~= nil and SelectedWorkTool ~= vehicle and SelectedWorkTool.advd ~= nil and SelectedWorkTool.advd.getWorkToolParkDestination ~= nil then
+                actualParkDestination = SelectedWorkTool.advd:getWorkToolParkDestination()
+            else
+                if vehicle ~= nil and vehicle.ad ~= nil and vehicle.ad.stateModule ~= nil and vehicle.ad.stateModule.getParkDestination ~= nil then
+                    -- g_logManager:info("[AD] ADInputManager:input_parkVehicle vehicle %s vehicle:getIsSelected() %s", tostring(vehicle), tostring(vehicle:getIsSelected()))
+                    actualParkDestination = vehicle.ad.stateModule:getParkDestination()
+                end
+            end
+
+            if actualParkDestination >= 1 then
                 vehicle.ad.sToolTipInfo = ADGraphManager:getMapMarkerById(actualParkDestination).name
             end
 

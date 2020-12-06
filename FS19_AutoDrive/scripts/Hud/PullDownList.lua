@@ -10,18 +10,7 @@ ADPullDownList.TYPE_FILLTYPE = 3
 ADPullDownList.EXPANDED_DOWN = -1
 ADPullDownList.EXPANDED_UP = 1
 
-ADPullDownList.MAX_SHOWN = 24
-ADPullDownList.MIN_SHOWN = 2
-
--- top level icons
-ADPullDownList.ICON_COLLAPSALL = 1
-ADPullDownList.ICON_FILTER = 2
-ADPullDownList.ICON_CREATE_FOLDER = 3
-
--- folder icons
--- ADPullDownList.ICON_EXPAND_COLLAPS = 1
-ADPullDownList.ICON_DELETE_FOLDER = 1
-
+ADPullDownList.MAX_SHOWN = 25
 
 function ADPullDownList:initReusableOverlaysOnlyOnce()
     local function overlayReuseOrNew(overlay, imageFilename)
@@ -34,11 +23,11 @@ function ADPullDownList:initReusableOverlaysOnlyOnce()
     -- For avoiding creating/destroying multiple Overlay objects in onDraw, so here we only create
     -- one instance of each icon (overlay). Then in onDraw we use the game engine's renderOverlay()
     -- API method directly. Should reduce excessive memory allocation/deallocation tremendously.
-    -- ADPullDownList.ovCollapse = overlayReuseOrNew(ADPullDownList.ovCollapse, self.imageCollapse)
-    -- ADPullDownList.ovExpand = overlayReuseOrNew(ADPullDownList.ovExpand, self.imageExpand)
+    ADPullDownList.ovCollapse = overlayReuseOrNew(ADPullDownList.ovCollapse, self.imageCollapse)
+    ADPullDownList.ovExpand = overlayReuseOrNew(ADPullDownList.ovExpand, self.imageExpand)
     --ADPullDownList.ovAddHere = overlayReuseOrNew(ADPullDownList.ovAddHere, self.imageRight)
-    ADPullDownList.ovPlus = overlayReuseOrNew(ADPullDownList.ovPlus, self.imagePlus)
     ADPullDownList.ovMinus = overlayReuseOrNew(ADPullDownList.ovMinus, self.imageMinus)
+    ADPullDownList.ovPlus = overlayReuseOrNew(ADPullDownList.ovPlus, self.imagePlus)
     ADPullDownList.ovFilter = overlayReuseOrNew(ADPullDownList.ovFilter, self.imageFilter)
     ADPullDownList.ovCollapseAll = overlayReuseOrNew(ADPullDownList.ovCollapseAll, self.imageCollapseAll)
 end
@@ -48,19 +37,15 @@ function ADPullDownList:new(posX, posY, width, height, type, selected)
     o:init(posX, posY, width, height)
     o.selected = selected
     o.type = type
-    o.size.height = AutoDrive.Hud.buttonHeight  -- uiScale * 32
+    o.size.height = AutoDrive.Hud.buttonHeight
 
     AutoDrive.pullDownListExpanded = 0
--- icons in list 1/2 size of HUD icons?
--- position from right to left
--- right icon:
-    o.rightIconPos  = {x = o.position.x + o.size.width -  AutoDrive.Hud.buttonWidth / 2      - AutoDrive.Hud.gapWidth,     y = o.position.y + (o.size.height - AutoDrive.Hud.buttonHeight / 2) / 2}
+
+    o.rightIconPos = {x = o.position.x + o.size.width - AutoDrive.Hud.buttonWidth / 2 - AutoDrive.Hud.gapWidth, y = o.position.y + (o.size.height - AutoDrive.Hud.buttonHeight / 2) / 2}
     o.rightIconPos2 = {x = o.position.x + o.size.width - (AutoDrive.Hud.buttonWidth / 2) * 2 - AutoDrive.Hud.gapWidth * 3, y = o.position.y + (o.size.height - AutoDrive.Hud.buttonHeight / 2) / 2}
     o.rightIconPos3 = {x = o.position.x + o.size.width - (AutoDrive.Hud.buttonWidth / 2) * 3 - AutoDrive.Hud.gapWidth * 5, y = o.position.y + (o.size.height - AutoDrive.Hud.buttonHeight / 2) / 2}
--- most left icon:
     o.rightIconPos4 = {x = o.position.x + o.size.width - (AutoDrive.Hud.buttonWidth / 2) * 4 - AutoDrive.Hud.gapWidth * 6, y = o.position.y + (o.size.height - AutoDrive.Hud.buttonHeight / 2) / 2}
 
--- icons in list 1/2 size of HUD icons
     o.iconSize = {width = AutoDrive.Hud.buttonWidth / 2, height = AutoDrive.Hud.buttonHeight / 2}
     o.rowSize = {width = AutoDrive.Hud.buttonWidth / 2, height = AutoDrive.Hud.listItemHeight / 2}
 
@@ -71,18 +56,16 @@ function ADPullDownList:new(posX, posY, width, height, type, selected)
     o.imageBGBottom = AutoDrive.directory .. "textures/4xlongBorderBottomFilled.dds"
     o.imageBGStretch = AutoDrive.directory .. "textures/4xlongBorderStretchFilled.dds"
     o.imageExpand = AutoDrive.directory .. "textures/arrowExpand.dds"
-    -- o.imageCollapse = AutoDrive.directory .. "textures/arrowCollapse.dds"
+    o.imageCollapse = AutoDrive.directory .. "textures/arrowCollapse.dds"
     o.imageCollapseAll = AutoDrive.directory .. "textures/arrowCollapseAll.dds"
-    -- o.imageUp = AutoDrive.directory .. "textures/arrowUp.dds"
-    -- o.imageDown = AutoDrive.directory .. "textures/arrowDown.dds"
+    o.imageUp = AutoDrive.directory .. "textures/arrowUp.dds"
+    o.imageDown = AutoDrive.directory .. "textures/arrowDown.dds"
     o.imagePlus = AutoDrive.directory .. "textures/plusSign.dds"
     o.imageMinus = AutoDrive.directory .. "textures/minusSign.dds"
-    -- o.imageRight = AutoDrive.directory .. "textures/arrowRight.dds"
+    o.imageRight = AutoDrive.directory .. "textures/arrowRight.dds"
     o.imageFilter = AutoDrive.directory .. "textures/zoom.dds"
 
     o.ovBG = Overlay:new(o.imageBG, o.position.x, o.position.y, o.size.width, o.size.height)
--- expand icon if collapsed
--- ovExpand used double: o. / ADPullDownList.
     o.ovExpand = Overlay:new(o.imageExpand, o.rightIconPos.x, o.rightIconPos.y, o.iconSize.width, o.iconSize.height)
 
     o.state = ADPullDownList.STATE_COLLAPSED
@@ -90,7 +73,7 @@ function ADPullDownList:new(posX, posY, width, height, type, selected)
 
     o:createSelection()
 
-    o.expandedSize = {width = o.size.width, height = o.rowSize.height * (ADPullDownList.MAX_SHOWN + 1) + o.size.height / 2}
+    o.expandedSize = {width = o.size.width, height = o.rowSize.height * ADPullDownList.MAX_SHOWN + o.size.height / 2}
     if o.position.y >= 0.5 then
         o.direction = ADPullDownList.EXPANDED_DOWN
     else
@@ -167,24 +150,7 @@ function ADPullDownList:onDraw(vehicle, uiScale)
 
         local useFolders = AutoDrive.getSetting("useFolders")
 
-        -- fixed position for top icons + actions
-        if self.type ~= ADPullDownList.TYPE_FILLTYPE then
-            -- handle top icons + actions -> in line 1
-            local boxPos = self:getTextPositionByDisplayIndex(1, uiScale)
-            local posY = boxPos.y
-
-            -- left: collapse all
-            renderOverlay(ADPullDownList.ovCollapseAll.overlayId,   self.rightIconPos.x,  posY, self.iconSize.width, self.iconSize.height)
-            -- 2nd: filter
-            renderOverlay(ADPullDownList.ovFilter.overlayId,        self.rightIconPos2.x, posY, self.iconSize.width, self.iconSize.height)
-
-            if AutoDrive.isEditorModeEnabled() then
-                -- 3rd: add folder
-                renderOverlay(ADPullDownList.ovPlus.overlayId,          self.rightIconPos3.x, posY, self.iconSize.width, self.iconSize.height)
-            end
-        end
-
-        for i = 1, ADPullDownList.MAX_SHOWN - 1, 1 do
+        for i = 1, ADPullDownList.MAX_SHOWN, 1 do
             local listEntry = self:getListElementByDisplayIndex(vehicle, i)
             if listEntry ~= nil then
                 local text = listEntry.displayName
@@ -207,24 +173,40 @@ function ADPullDownList:onDraw(vehicle, uiScale)
                 end
                 text = self:shortenTextToWidth(text, textTargetWidth, adFontSize)
 
-                local textPosition = self:getTextPositionByDisplayIndex(i + 1, uiScale)     -- start 1 line later
+                local textPosition = self:getTextPositionByDisplayIndex(i, uiScale)
 
                 if listEntry.isFolder then
---[[
-                    -- expand / collaps icons for folder in list
                     if vehicle.ad.groups[listEntry.displayName] then
                         renderOverlay(ADPullDownList.ovCollapse.overlayId, self.rightIconPos.x, textPosition.y, self.iconSize.width, self.iconSize.height)
                     else
                         renderOverlay(ADPullDownList.ovExpand.overlayId, self.rightIconPos.x, textPosition.y, self.iconSize.width, self.iconSize.height)
                     end
-]]
 
-                    if AutoDrive.isEditorModeEnabled() then
-                        if (listEntry.displayName ~= "All") and self:getItemCountForGroup(listEntry.displayName) <= 0 then
-                            -- icon minus for delete folder only for empty folders and not standard folder
-                            renderOverlay(ADPullDownList.ovMinus.overlayId, self.rightIconPos.x, textPosition.y, self.iconSize.width, self.iconSize.height)
+                    if vehicle.ad.stateModule:isEditorModeEnabled() then
+                        --renderOverlay(ADPullDownList.ovAddHere.overlayId, self.rightIconPos2.x, textPosition.y, self.iconSize.width, self.iconSize.height)
+
+                        if (listEntry.displayName ~= "All") then
+                            if self:getItemCountForGroup(listEntry.displayName) <= 0 then
+                                renderOverlay(ADPullDownList.ovMinus.overlayId, self.rightIconPos2.x, textPosition.y, self.iconSize.width, self.iconSize.height)
+                            end
+                        else
+                            renderOverlay(ADPullDownList.ovCollapseAll.overlayId, self.rightIconPos2.x, textPosition.y, self.iconSize.width, self.iconSize.height)
+                            renderOverlay(ADPullDownList.ovPlus.overlayId, self.rightIconPos3.x, textPosition.y, self.iconSize.width, self.iconSize.height)
+                            renderOverlay(ADPullDownList.ovFilter.overlayId, self.rightIconPos4.x, textPosition.y, self.iconSize.width, self.iconSize.height)
+                        end
+                    else
+                        if (listEntry.displayName == "All") then
+                            renderOverlay(ADPullDownList.ovCollapseAll.overlayId, self.rightIconPos2.x, textPosition.y, self.iconSize.width, self.iconSize.height)
+                            renderOverlay(ADPullDownList.ovFilter.overlayId, self.rightIconPos3.x, textPosition.y, self.iconSize.width, self.iconSize.height)
                         end
                     end
+                --else
+                --if self.type ~= ADPullDownList.TYPE_FILLTYPE and AutoDrive.getSetting("useFolders") then
+                --listEntry.ovUp = Overlay:new(self.imageUp, self.rightIconPos2.x, textPosition.y, self.iconSize.width, self.iconSize.height);
+                --listEntry.ovUp:render();
+                --listEntry.ovDown = Overlay:new(self.imageDown, self.rightIconPos.x, textPosition.y, self.iconSize.width, self.iconSize.height);
+                --listEntry.ovDown:render();
+                --end;
                 end
 
                 if self.hovered == self.selected + (i - 1) and listEntry.isFolder == false then
@@ -253,8 +235,7 @@ function ADPullDownList:onDraw(vehicle, uiScale)
             end
         end
 
-        -- moving item to draw in yellow
-        if AutoDrive.isEditorModeEnabled() and self.dragged ~= nil and self.startedDraggingTimer > 200 then
+        if vehicle.ad.stateModule:isEditorModeEnabled() and self.dragged ~= nil and self.startedDraggingTimer > 200 then
             if g_lastMousePosX ~= nil and g_lastMousePosY ~= nil then
                 setTextBold(true)
                 setTextColor(0.0, 0.569, 0.835, 1)
@@ -333,27 +314,10 @@ function ADPullDownList:getElementAt(vehicle, posX, posY)
         uiScale = AutoDrive.getSetting("guiScale")
     end
 
-    -- handle top icons + actions -> in line 1
-    local boxPos = self:getTextPositionByDisplayIndex(1, uiScale)
-    if posX >= boxPos.x and posX <= (boxPos.x + boxPos.width) and posY >= boxPos.y and posY <= (boxPos.y + boxPos.height) then
-        local hitIcon = 0
-        if posX >= self.rightIconPos.x then
-            hitIcon = 1
-        elseif posX >= self.rightIconPos2.x then
-            hitIcon = 2
-        elseif posX >= self.rightIconPos3.x then
-            hitIcon = 3
-        elseif posX >= self.rightIconPos4.x then
-            hitIcon = 4
-        end
-
-        return nil, 0, hitIcon
-    end
-
-    for i = 1, ADPullDownList.MAX_SHOWN - 1, 1 do
+    for i = 1, ADPullDownList.MAX_SHOWN, 1 do
         local listEntry = self:getListElementByDisplayIndex(vehicle, i)
         if listEntry ~= nil then
-            local boxPos = self:getTextPositionByDisplayIndex(i + 1, uiScale)
+            local boxPos = self:getTextPositionByDisplayIndex(i, uiScale)
 
             if posX >= boxPos.x and posX <= (boxPos.x + boxPos.width) and posY >= boxPos.y and posY <= (boxPos.y + boxPos.height) then
                 local hitIcon = 0
@@ -580,51 +544,60 @@ function ADPullDownList:act(vehicle, posX, posY, isDown, isUp, button)
     if (self.type ~= ADPullDownList.TYPE_FILLTYPE or vehicle.ad.stateModule:getMode() == AutoDrive.MODE_LOAD or vehicle.ad.stateModule:getMode() == AutoDrive.MODE_PICKUPANDDELIVER) and (self.type ~= ADPullDownList.TYPE_UNLOAD or vehicle.ad.stateModule:getMode() == AutoDrive.MODE_LOAD or vehicle.ad.stateModule:getMode() == AutoDrive.MODE_PICKUPANDDELIVER or vehicle.ad.stateModule:getMode() == AutoDrive.MODE_UNLOAD) then
         local hitElement, hitIndex, hitIcon = self:getElementAt(vehicle, posX, posY)
         if button == 1 and isUp then
-            -- left mouse button
-            if self.state == ADPullDownList.STATE_EXPANDED and self.type ~= ADPullDownList.TYPE_FILLTYPE and AutoDrive.isEditorModeEnabled() and AutoDrive.getSetting("useFolders") and self.dragged ~= nil and self.startedDraggingTimer > 200 then
-                -- drag element to hitElement
+            if vehicle.ad.stateModule:isEditorModeEnabled() and self.state == ADPullDownList.STATE_EXPANDED and AutoDrive.getSetting("useFolders") and self.dragged ~= nil and self.startedDraggingTimer > 200 and self.type ~= ADPullDownList.TYPE_FILLTYPE then
                 if hitElement ~= nil then
                     self:sortDraggedInGroup(self.draggedElement, hitElement)
                 end
             elseif self.state == ADPullDownList.STATE_COLLAPSED and AutoDrive.pullDownListExpanded <= 0 then
-                -- expand the collapsed list
                 self:expand(vehicle)
-            elseif self.state == ADPullDownList.STATE_EXPANDED and (hitElement ~=nil and not hitElement.isFolder) then
-                -- clicked outside -> collaps complete list
-                self:collapse(vehicle, true)
-            elseif self.state == ADPullDownList.STATE_EXPANDED and self.type ~= ADPullDownList.TYPE_FILLTYPE and hitIcon ~= nil and hitIcon == ADPullDownList.ICON_COLLAPSALL and hitIndex ~= nil and hitIndex == 0 then
-                -- top icon -> collaps all folders
-                for groupId,_ in pairs(vehicle.ad.groups) do
-                    vehicle.ad.groups[groupId] = false
-                end
-                self.selected = 1
-                self.hovered = 1
-            elseif self.state == ADPullDownList.STATE_EXPANDED and self.type ~= ADPullDownList.TYPE_FILLTYPE and hitIcon ~= nil and hitIcon == ADPullDownList.ICON_FILTER and hitIndex ~= nil and hitIndex == 0 then
-                -- top icon -> Filter
-                ADInputManager:onInputCall(vehicle, "input_setDestinationFilter")
-                -- TODO: show only results
-                for groupId,_ in pairs(vehicle.ad.groups) do
-                    vehicle.ad.groups[groupId] = true
-                end
-                self.selected = 1
-                self.hovered = 1
-            elseif self.state == ADPullDownList.STATE_EXPANDED and self.type ~= ADPullDownList.TYPE_FILLTYPE and hitIcon ~= nil and hitIcon == ADPullDownList.ICON_CREATE_FOLDER and hitIndex ~= nil and hitIndex == 0 and AutoDrive.isEditorModeEnabled() then
-                -- create new folder
-                -- self:collapse(vehicle, true)
-                AutoDrive.onOpenEnterGroupName()
-            elseif self.state == ADPullDownList.STATE_EXPANDED and hitElement ~= nil then
-                -- clicked in element list, not top icon
-                if (hitIcon ~= nil and hitIcon ~= ADPullDownList.ICON_DELETE_FOLDER) and hitElement.isFolder then
-                    -- clicked folder, but not icon delete
+            elseif self.state == ADPullDownList.STATE_EXPANDED then
+                if hitIcon == nil or hitIcon == 0 then
+                    self:collapse(vehicle, true)
+                elseif hitIcon ~= nil and hitIcon == 1 then
                     if hitElement.isFolder then
                         vehicle.ad.groups[hitElement.returnValue] = not vehicle.ad.groups[hitElement.returnValue]
+                    --else
+                    --self:moveSelectedElementDown(vehicle, hitElement);
                     end
-                elseif self.state == ADPullDownList.STATE_EXPANDED and hitIcon ~= nil and hitIcon == ADPullDownList.ICON_DELETE_FOLDER and AutoDrive.isEditorModeEnabled() then
-                    -- remove empty folder
-                    if hitElement.isFolder and (hitElement.displayName ~= "All") then
-                        if self:getItemCountForGroup(hitElement.displayName) <= 0 then
-                            -- AutoDrive.pullDownListExpanded = 0
-                            ADGraphManager:removeGroup(hitElement.returnValue)
+                elseif hitIcon ~= nil and hitIcon == 2 and (not vehicle.ad.stateModule:isEditorModeEnabled()) and self.state == ADPullDownList.STATE_EXPANDED then
+                    if hitElement.isFolder then
+                        if (hitElement.displayName == "All") then
+                            for groupId,_ in pairs(vehicle.ad.groups) do
+                                vehicle.ad.groups[groupId] = false
+                            end
+                        end
+                    end
+                elseif hitIcon ~= nil and hitIcon == 3 and (not vehicle.ad.stateModule:isEditorModeEnabled()) and self.state == ADPullDownList.STATE_EXPANDED then
+                    if hitElement.isFolder then
+                        if (hitElement.displayName == "All") then
+                            --self:collapse(vehicle, true)
+                            ADInputManager:onInputCall(vehicle, "input_setDestinationFilter")
+                        end
+                    end
+                elseif hitIcon ~= nil and hitIcon == 2 and vehicle.ad.stateModule:isEditorModeEnabled() and self.state == ADPullDownList.STATE_EXPANDED then
+                    if hitElement.isFolder then
+                        if (hitElement.displayName ~= "All") then
+                            if self:getItemCountForGroup(hitElement.displayName) <= 0 then
+                                AutoDrive.pullDownListExpanded = 0
+                                ADGraphManager:removeGroup(hitElement.returnValue)
+                            end
+                        else
+                            for groupId,_ in pairs(vehicle.ad.groups) do
+                                vehicle.ad.groups[groupId] = false
+                            end
+                        end
+                    end
+                elseif hitIcon ~= nil and hitIcon == 3 and vehicle.ad.stateModule:isEditorModeEnabled() and self.state == ADPullDownList.STATE_EXPANDED then
+                    if hitElement.isFolder then
+                        if (hitElement.displayName == "All") then
+                            self:collapse(vehicle, true)
+                            AutoDrive.onOpenEnterGroupName()
+                        end
+                    end
+                elseif hitIcon ~= nil and hitIcon == 4 and vehicle.ad.stateModule:isEditorModeEnabled() and self.state == ADPullDownList.STATE_EXPANDED then
+                    if hitElement.isFolder then
+                        if (hitElement.displayName == "All") then
+                            ADInputManager:onInputCall(vehicle, "input_setDestinationFilter")
                         end
                     end
                 end
@@ -632,18 +605,7 @@ function ADPullDownList:act(vehicle, posX, posY, isDown, isUp, button)
             self.dragged = nil
             self.startedDraggingTimer = nil
             return true
-        elseif (button == 3) and isUp then
-            -- right mouse button
-            if self.state == ADPullDownList.STATE_EXPANDED and self.type ~= ADPullDownList.TYPE_FILLTYPE and hitIcon ~= nil and hitIcon == ADPullDownList.ICON_FILTER and hitIndex ~= nil and hitIndex == 0 then
-                -- clear filter
-                vehicle.ad.destinationFilterText = ""
-                for groupId,_ in pairs(vehicle.ad.groups) do
-                    vehicle.ad.groups[groupId] = false
-                end
-            end
-            return true
         elseif button == 4 and isUp then
-            -- mouse wheel
             local oldSelected = self.selected
             self.selected = math.max(1, self.selected - 1)
             if oldSelected ~= self.selected then
@@ -655,17 +617,25 @@ function ADPullDownList:act(vehicle, posX, posY, isDown, isUp, button)
             AutoDrive.mouseWheelActive = true
             return true
         elseif button == 5 and isUp then
-            -- mouse wheel
-            if self:getListElementByIndex(vehicle, self.selected + 1 + ADPullDownList.MAX_SHOWN - 3) ~= nil then
+            if self:getListElementByIndex(vehicle, self.selected + 1 + ADPullDownList.MAX_SHOWN - 2) ~= nil then
                 self.selected = self.selected + 1
-                if self:getListElementByIndex(vehicle, self.hovered + 1 + ADPullDownList.MAX_SHOWN - 3) ~= nil then
+                if self:getListElementByIndex(vehicle, self.hovered + 1 + ADPullDownList.MAX_SHOWN - 2) ~= nil then
                     self.hovered = self.hovered + 1
                 end
             end
             AutoDrive.mouseWheelActive = true
             return true
-        elseif self.state == ADPullDownList.STATE_EXPANDED and button == 1 and isDown and AutoDrive.getSetting("useFolders") and AutoDrive.isEditorModeEnabled() and self.type ~= ADPullDownList.TYPE_FILLTYPE then
-            -- drag an element
+        --elseif (button == 2 or button == 3) and isUp and self.state == ADPullDownList.STATE_COLLAPSED then
+            --ADInputManager:onInputCall(vehicle, "input_setDestinationFilter")
+        elseif (button == 2 or button == 3) and isUp and self.state == ADPullDownList.STATE_EXPANDED then
+            if hitIcon ~= nil and ((hitIcon == 2 and (not vehicle.ad.stateModule:isEditorModeEnabled())) or (hitIcon == 4 and vehicle.ad.stateModule:isEditorModeEnabled())) then
+                if hitElement.isFolder then
+                    if (hitElement.displayName == "All") then
+                        vehicle.ad.destinationFilterText = ""
+                    end
+                end
+            end
+        elseif self.state == ADPullDownList.STATE_EXPANDED and button == 1 and isDown and AutoDrive.getSetting("useFolders") and vehicle.ad.stateModule:isEditorModeEnabled() and self.type ~= ADPullDownList.TYPE_FILLTYPE then
             if hitIndex ~= nil and self.dragged == nil and hitElement ~= nil and not hitElement.isFolder then
                 self.dragged = self.selected + (hitIndex - 1)
                 self.startedDraggingTimer = 0
@@ -692,7 +662,7 @@ function ADPullDownList:expand(vehicle)
         AutoDrive.pullDownListDirection = self.direction
 
         --possibly adjust height to number of elements (visible)
-        self.expandedSize.height = math.min(itemCount + ADPullDownList.MIN_SHOWN, ADPullDownList.MAX_SHOWN) * AutoDrive.Hud.listItemHeight + self.size.height / 2
+        self.expandedSize.height = math.min(itemCount, ADPullDownList.MAX_SHOWN) * AutoDrive.Hud.listItemHeight + self.size.height / 2
 
         if self.direction == ADPullDownList.EXPANDED_UP then
             self.ovTop = Overlay:new(self.imageBGTop, self.position.x, self.position.y + self.expandedSize.height - self.size.height / 2, self.size.width, self.size.height / 2)
@@ -744,20 +714,16 @@ function ADPullDownList:setSelected(vehicle)
             if useFolders then
                 index = index + 1
             end
-
-            if vehicle.ad.groups[self:groupIDToGroupName(self.fakeGroupIDs[groupID])] == true or (not useFolders) then
-
-                for _, entry in pairs(entries) do
-                    if entry.returnValue == vehicle.ad.stateModule:getFirstMarkerId() then
-                        self.selected = index
-                        self.hovered = self.selected
-                        if not vehicle.ad.groups[self:groupIDToGroupName(self.fakeGroupIDs[groupID])] then
-                            vehicle.ad.groups[self:groupIDToGroupName(self.fakeGroupIDs[groupID])] = true
-                        end
-                        break
+            for _, entry in pairs(entries) do
+                if entry.returnValue == vehicle.ad.stateModule:getFirstMarkerId() then
+                    self.selected = index
+                    self.hovered = self.selected
+                    if not vehicle.ad.groups[self:groupIDToGroupName(self.fakeGroupIDs[groupID])] then
+                        vehicle.ad.groups[self:groupIDToGroupName(self.fakeGroupIDs[groupID])] = true
                     end
-                    index = index + 1
+                    break
                 end
+                index = index + 1
             end
             if self.selected ~= 1 then
                 break
@@ -805,7 +771,7 @@ function ADPullDownList:setSelected(vehicle)
     end
 
     local reachedTop = false
-    local numberOfElementsVisible = math.min(self:getItemCount(), ADPullDownList.MAX_SHOWN - 2)
+    local numberOfElementsVisible = math.min(self:getItemCount(), ADPullDownList.MAX_SHOWN)
     while (not reachedTop) do
         if self:getListElementByIndex(vehicle, self.selected - 1) ~= nil and (self.hovered < (self.selected + numberOfElementsVisible - 1)) then
             self.selected = self.selected - 1

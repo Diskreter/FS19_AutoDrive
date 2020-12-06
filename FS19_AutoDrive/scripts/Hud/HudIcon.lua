@@ -43,14 +43,18 @@ function ADHudIcon:onDrawHeader(vehicle, uiScale)
     textToShow = textToShow .. " - " .. AutoDrive.version
     textToShow = textToShow .. " - " .. AutoDriveHud:getModeName(vehicle)
 
-    local remainingTime = vehicle.ad.stateModule:getRemainingDriveTime()
-    if remainingTime ~= 0 then
+    local x, y, z = getWorldTranslation(vehicle.components[1].node)
+    if vehicle ~= nil and vehicle == g_currentMission.controlledVehicle and vehicle.ad ~= nil and vehicle.ad.stateModule ~= nil and vehicle.spec_motorized ~= nil and not AutoDrive.checkIsOnField(x, y, z) and vehicle.ad.stateModule:getMode() ~= AutoDrive.MODE_BGA then
+        local wp, currentWayPoint = vehicle.ad.drivePathModule:getWayPoints()
+        local remainingTime = ADGraphManager:getDriveTimeForWaypoints(wp, currentWayPoint, math.min((vehicle.spec_motorized.motor.maxForwardSpeed * 3.6), vehicle.ad.stateModule:getSpeedLimit()))
         local remainingMinutes = math.floor(remainingTime / 60)
         local remainingSeconds = remainingTime % 60
-        if remainingMinutes > 0 then
-            textToShow = textToShow .. " - " .. string.format("%.0f", remainingMinutes) .. ":" .. string.format("%02d", math.floor(remainingSeconds))
-        elseif remainingSeconds ~= 0 then
-            textToShow = textToShow .. " - " .. string.format("%2.0f", remainingSeconds) .. "s"
+        if remainingTime ~= 0 then
+            if remainingMinutes > 0 then
+                textToShow = textToShow .. " - " .. string.format("%.0f", remainingMinutes) .. ":" .. string.format("%02d", math.floor(remainingSeconds))
+            elseif remainingSeconds ~= 0 then
+                textToShow = textToShow .. " - " .. string.format("%2.0f", remainingSeconds) .. "s"
+            end
         end
     end
 
@@ -71,12 +75,20 @@ function ADHudIcon:onDrawHeader(vehicle, uiScale)
         textToShow = textToShow .. " - " .. taskInfo
     end
 
-    if AutoDrive.isInExtendedEditorMode() then
-        textToShow = textToShow .. " - " .. g_i18n:getText("AD_lshift_for_reverse")
-        textToShow = textToShow .. " / " .. g_i18n:getText("AD_lalt_for_deletion")
+    if AutoDrive.getSetting("secondEditorModeAllowed") then
+        if vehicle.ad.stateModule:isInExtendedEditorMode() then
+            textToShow = textToShow .. " - " .. g_i18n:getText("AD_lctrl_for_creation")
+            textToShow = textToShow .. " / " .. g_i18n:getText("AD_lalt_for_deletion")
+        end
+    else
+        if vehicle.ad.stateModule:isInExtendedEditorMode() then
+            textToShow = textToShow .. " - " .. g_i18n:getText("AD_lalt_for_deletion")
+        elseif vehicle.ad.stateModule:getEditorMode() == ADStateModule.EDITOR_ON then
+            textToShow = textToShow .. " - " .. g_i18n:getText("AD_lctrl_for_extendedEditor")
+        end
     end
 
-    if AutoDrive.isEditorModeEnabled() and AutoDrive.getDebugChannelIsSet(AutoDrive.DC_PATHINFO) then
+    if vehicle.ad.stateModule:isEditorModeEnabled() and AutoDrive.getDebugChannelIsSet(AutoDrive.DC_PATHINFO) then
         if vehicle.ad.pathFinderModule.steps > 0 then
             textToShow = textToShow .. " - " .. "Fallback: " .. AutoDrive.boolToString(vehicle.ad.pathFinderModule.fallBackMode)
         end
