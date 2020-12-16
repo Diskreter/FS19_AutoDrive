@@ -188,11 +188,13 @@ function AutoDrive.readFromXML(xmlFile)
 			local wp = {}
 			wp["id"] = tonumber(id)
 			wp["out"] = {}
+            local out_counter = 1
 			if outSplitted[i] ~= nil then
-				for i2, outStr in pairs(outSplitted[i]) do
+				for _, outStr in pairs(outSplitted[i]) do
 					local number = tonumber(outStr)
 					if number ~= -1 then
-						wp["out"][i2] = tonumber(outStr)
+						wp["out"][out_counter] = tonumber(outStr)
+                        out_counter = out_counter + 1
 					end
 				end
 			end
@@ -205,9 +207,9 @@ function AutoDrive.readFromXML(xmlFile)
 						local number = tonumber(incomingID)
 						if number ~= -1 then
 							wp["incoming"][incoming_counter] = tonumber(incomingID)
+                            incoming_counter = incoming_counter + 1
 						end
 					end
-					incoming_counter = incoming_counter + 1
 				end
 			end
 
