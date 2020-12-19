@@ -33,7 +33,6 @@ ADInputManager.actionsToInputs = {
     ADIncLoopCounter = "input_incLoopCounter",
     ADSwapTargets = "input_swapTargets",
     AD_open_notification_history = "input_openNotificationHistory",
-    AD_continue = "input_continue",
     ADParkVehicle = "input_parkVehicle"
 }
 
@@ -109,7 +108,7 @@ function ADInputManager:input_openNotificationHistory(vehicle)
 end
 
 function ADInputManager:input_editMapMarker(vehicle)
-    if AutoDrive.isEditorModeEnabled() then
+    if vehicle.ad.stateModule:isEditorModeEnabled() then
         -- This can be triggered both from 'Edit Target' keyboard shortcut and right click on 'Create Target' hud button
         if ADGraphManager:getWayPointById(1) == nil or vehicle.ad.stateModule:getFirstMarker() == nil then
             return
@@ -120,7 +119,7 @@ function ADInputManager:input_editMapMarker(vehicle)
 end
 
 function ADInputManager:input_removeWaypoint(vehicle)
-    if AutoDrive.isEditorModeEnabled() then
+    if vehicle.ad.stateModule:isEditorModeEnabled() then
         local closestWayPoint, _ = vehicle:getClosestWayPoint()
         if ADGraphManager:getWayPointById(closestWayPoint) ~= nil then
             -- This can be triggered both from 'Remove Waypoint' keyboard shortcut and left click on 'Remove Waypoint' hud button
@@ -130,7 +129,7 @@ function ADInputManager:input_removeWaypoint(vehicle)
 end
 
 function ADInputManager:input_removeMapMarker(vehicle)
-    if AutoDrive.isEditorModeEnabled() then
+    if vehicle.ad.stateModule:isEditorModeEnabled() then
         local closestWayPoint, _ = vehicle:getClosestWayPoint()
         if ADGraphManager:getWayPointById(closestWayPoint) ~= nil then
             -- This can be triggered both from 'Remove Target' keyboard shortcut and right click on 'Remove Waypoint' hud button
@@ -140,7 +139,7 @@ function ADInputManager:input_removeMapMarker(vehicle)
 end
 
 function ADInputManager:input_createMapMarker(vehicle)
-    if AutoDrive.isEditorModeEnabled() then
+    if vehicle.ad.stateModule:isEditorModeEnabled() then
         local closestWayPoint, _ = vehicle:getClosestWayPoint()
         if ADGraphManager:getWayPointById(closestWayPoint) ~= nil then
             -- This can be triggered both from 'Create Target' keyboard shortcut and left click on 'Create Target' hud button
@@ -151,7 +150,7 @@ function ADInputManager:input_createMapMarker(vehicle)
 end
 
 function ADInputManager:input_toggleConnection(vehicle)
-    if AutoDrive.isEditorModeEnabled() then
+    if vehicle.ad.stateModule:isEditorModeEnabled() then
         local closestWayPoint, _ = vehicle:getClosestWayPoint()
         if ADGraphManager:getWayPointById(closestWayPoint) ~= nil then
             if vehicle.ad.stateModule:getSelectedNeighbourPoint() ~= nil then
@@ -162,7 +161,7 @@ function ADInputManager:input_toggleConnection(vehicle)
 end
 
 function ADInputManager:input_toggleConnectionInverted(vehicle)
-    if AutoDrive.isEditorModeEnabled() then
+    if vehicle.ad.stateModule:isEditorModeEnabled() then
         local closestWayPoint, _ = vehicle:getClosestWayPoint()
         if ADGraphManager:getWayPointById(closestWayPoint) ~= nil then
             if vehicle.ad.stateModule:getSelectedNeighbourPoint() ~= nil then
@@ -223,6 +222,27 @@ function ADInputManager:input_start_stop(vehicle)
         vehicle:stopAutoDrive()
     else
         vehicle.ad.stateModule:getCurrentMode():start()
+--[[
+        if AutoDrive.leftLSHIFTmodifierKeyPressed then
+            for _, otherVehicle in pairs(g_currentMission.vehicles) do
+                if otherVehicle ~= nil and otherVehicle ~= vehicle and otherVehicle.ad ~= nil and otherVehicle.ad.stateModule ~= nil then
+                    --Doesn't work yet, if vehicle hasn't been entered before apparently. So we need to check what to call before, to setup all required variables.
+                    
+                    if otherVehicle.ad.stateModule.activeBeforeSave then
+                        g_currentMission:requestToEnterVehicle(otherVehicle)
+                        otherVehicle.ad.stateModule:getCurrentMode():start()
+                    end
+                    if otherVehicle.ad.stateModule.AIVEActiveBeforeSave and otherVehicle.acParameters ~= nil then
+                        g_currentMission:requestToEnterVehicle(otherVehicle)
+                        otherVehicle.acParameters.enabled = true
+                        otherVehicle:startAIVehicle(nil, false, g_currentMission.player.farmId)
+                    end
+                    
+				end
+			end
+            g_currentMission:requestToEnterVehicle(vehicle)
+        end
+]]
     end
 end
 
@@ -236,6 +256,7 @@ end
 
 function ADInputManager:input_setParkDestination(vehicle)
     if vehicle.ad.stateModule:getFirstMarker() ~= nil then
+
         -- g_logManager:info("[AD] ADInputManager:input_setParkDestination vehicle %s vehicle:getIsSelected() %s", tostring(vehicle), tostring(vehicle:getIsSelected()))
 
         local SelectedWorkTool = nil
@@ -248,7 +269,7 @@ function ADInputManager:input_setParkDestination(vehicle)
                     table.insert(allImp, imp)
                 end
             end
-
+                
             addAllAttached(vehicle)
 
             if allImp ~= nil then
@@ -282,27 +303,25 @@ function ADInputManager:input_previousMode(vehicle)
 end
 
 function ADInputManager:input_record(vehicle)
-    if not vehicle.ad.stateModule:isInCreationMode() and not vehicle.ad.stateModule:isInDualCreationMode() then
-        vehicle.ad.stateModule:startNormalCreationMode()
-    else
-        vehicle.ad.stateModule:disableCreationMode()
+    if not vehicle.ad.stateModule:isEditorModeEnabled() then
+        return
     end
+    vehicle.ad.recordingModule:toggle(false)
 end
 
 function ADInputManager:input_record_dual(vehicle)
-    if not vehicle.ad.stateModule:isInCreationMode() and not vehicle.ad.stateModule:isInDualCreationMode() then
-        vehicle.ad.stateModule:startDualCreationMode()
-    else
-        vehicle.ad.stateModule:disableCreationMode()
+    if not vehicle.ad.stateModule:isEditorModeEnabled() then
+        return
     end
+    vehicle.ad.recordingModule:toggle(true)
 end
 
 function ADInputManager:input_debug(vehicle)
-    AutoDrive.cycleEditMode()
+    vehicle.ad.stateModule:cycleEditMode()
 end
 
 function ADInputManager:input_displayMapPoints(vehicle)
-    AutoDrive.cycleEditorShowMode()
+    vehicle.ad.stateModule:cycleEditorShowMode()
 end
 
 function ADInputManager:input_increaseSpeed(vehicle)
@@ -386,13 +405,43 @@ end
 function ADInputManager:input_callDriver(vehicle)
     if vehicle.spec_pipe ~= nil and vehicle.spec_enterable ~= nil then
         ADHarvestManager:assignUnloaderToHarvester(vehicle)
-    elseif vehicle.ad.isCombine and vehicle.ad.attachableCombine ~= nil then
-        ADHarvestManager:assignUnloaderToHarvester(vehicle.ad.attachableCombine)
     end
 end
 
 function ADInputManager:input_parkVehicle(vehicle)
-    local actualParkDestination = AutoDrive.getActualParkDestination(vehicle)
+    local actualParkDestination = -1
+    local SelectedWorkTool = nil
+
+    if vehicle ~= nil and vehicle.getAttachedImplements and #vehicle:getAttachedImplements() > 0 and g_dedicatedServerInfo == nil then
+        local allImp = {}
+        -- Credits to Tardis from FS17
+        local function addAllAttached(obj)
+            for _, imp in pairs(obj:getAttachedImplements()) do
+                addAllAttached(imp.object)
+                table.insert(allImp, imp)
+            end
+        end
+            
+        addAllAttached(vehicle)
+
+        if allImp ~= nil then
+            for i = 1, #allImp do
+                local imp = allImp[i]
+                if imp ~= nil and imp.object ~= nil and imp.object:getIsSelected() then
+                    SelectedWorkTool = imp.object
+                    break
+                end
+            end
+        end
+    end
+    if SelectedWorkTool ~= nil and SelectedWorkTool ~= vehicle and SelectedWorkTool.advd ~= nil and SelectedWorkTool.advd.getWorkToolParkDestination ~= nil then
+            actualParkDestination = SelectedWorkTool.advd:getWorkToolParkDestination()
+    else
+        if vehicle ~= nil and vehicle.ad ~= nil and vehicle.ad.stateModule ~= nil and vehicle.ad.stateModule.getParkDestination ~= nil then
+            -- g_logManager:info("[AD] ADInputManager:input_parkVehicle vehicle %s vehicle:getIsSelected() %s", tostring(vehicle), tostring(vehicle:getIsSelected()))
+            actualParkDestination = vehicle.ad.stateModule:getParkDestination()
+        end
+    end
 
     if actualParkDestination >= 1 then
         vehicle.ad.stateModule:setFirstMarker(actualParkDestination)
@@ -404,8 +453,7 @@ function ADInputManager:input_parkVehicle(vehicle)
         self:input_start_stop(vehicle)
         vehicle.ad.onRouteToPark = true
     else
-        vehicle.ad.onRouteToPark = false
-        AutoDriveMessageEvent.sendMessage(vehicle, ADMessagesManager.messageTypes.ERROR, "$l10n_AD_parkVehicle_noPosSet;", 5000)
+        AutoDriveMessageEvent.sendMessage(vehicle, ADMessagesManager.messageTypes.ERROR, "$l10n_AD_parkVehicle_noPosSet;", 3000)
     end
 end
 
@@ -416,15 +464,15 @@ function ADInputManager:input_swapTargets(vehicle)
     vehicle.ad.stateModule:removeCPCallback()
 end
 
-function ADInputManager:input_startCp(vehicle) -- enable / disable CP or AIVE
+function ADInputManager:input_startCp(vehicle)  -- enable / disable CP or AIVE
     if g_courseplay ~= nil or vehicle.acParameters ~= nil then
         vehicle.ad.stateModule:toggleStartCP_AIVE()
     end
 end
 
-function ADInputManager:input_toggleCP_AIVE(vehicle) -- select CP or AIVE
+function ADInputManager:input_toggleCP_AIVE(vehicle)    -- select CP or AIVE
     if g_courseplay ~= nil and vehicle.acParameters ~= nil then
         vehicle.ad.stateModule:toggleUseCP_AIVE()
-        vehicle.ad.stateModule:setStartCP_AIVE(false) -- disable if changed between CP and AIVE
+        vehicle.ad.stateModule:setStartCP_AIVE(false)   -- disable if changed between CP and AIVE
     end
 end

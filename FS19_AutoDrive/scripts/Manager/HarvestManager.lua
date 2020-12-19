@@ -212,7 +212,6 @@ function ADHarvestManager:update(dt)
 end
 
 function ADHarvestManager.doesHarvesterNeedUnloading(harvester, ignorePipe)
-    local ret = false
     local fillLevel, leftCapacity = AutoDrive.getFilteredFillLevelAndCapacityOfAllUnits(harvester)
     local maxCapacity = fillLevel + leftCapacity
 
@@ -222,22 +221,7 @@ function ADHarvestManager.doesHarvesterNeedUnloading(harvester, ignorePipe)
     end
 
     local pipeOut = AutoDrive.isPipeOut(harvester)
-    ret = (
-            (
-                    (
-                        (maxCapacity > 0 and leftCapacity / maxCapacity < 0.2)
-                        -- (maxCapacity > 0 and leftCapacity < 1.0)
-                    or 
-                        cpIsCalling
-                    ) 
-                and
-                -- (pipeOut or ignorePipe) 
-                (pipeOut or (ignorePipe == true)) 
-            )
-            and 
-            harvester.ad.noMovementTimer.elapsedTime > 5000
-        )
-    return ret
+    return (((maxCapacity > 0 and leftCapacity < 1.0) or cpIsCalling) and (pipeOut or ignorePipe) and harvester.ad.noMovementTimer.elapsedTime > 5000)
 end
 
 function ADHarvestManager.isHarvesterActive(harvester)
