@@ -32,23 +32,16 @@ and also
 
 # Downloads
 
-<<<<<<< HEAD
-### Latest Release Candidate: 1.1.0.5-RC5
-[You can download the latest release candidate here](https://host-my-bits.com/cdn/files/1/FS19_AutoDrive.zip)  
+### Latest Release (Non-Candidate): 1.1.0.7
+[You can download the latest release here](https://host-my-bits.com/cdn/files/1/FS19_AutoDrive.zip)  
 
 ![Download Counter](https://host-my-bits.com/cdn/badges/dc/1?v=3)  
-### Latest Release: 1.1.0.4
-=======
-### Latest Release (Non-Candidate): 1.1.0.6
-[You can download the latest release candidate here](https://host-my-bits.com/cdn/files/1/FS19_AutoDrive.zip)  
-
-![Download Counter](https://host-my-bits.com/cdn/badges/dc/1?v=3)  
-### Release before: 1.1.0.4
->>>>>>> parent of 286950b... Release 1.1.0.6
+### Release: 1.1.0.7
 ![Version](https://host-my-bits.com/cdn/badges/v/2)  
 
 [You can download the latest release here](https://host-my-bits.com/cdn/files/2/FS19_AutoDrive.zip)  
 
 ![Download Counter](https://host-my-bits.com/cdn/badges/dc/2)  
+
 ### Course Editor
 [You can download the latest version here](https://github.com/Stephan-S/FS19_AutoDrive/raw/master/AutoDrive%20Course%20Editor/AD.jar)
